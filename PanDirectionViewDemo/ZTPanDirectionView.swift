@@ -23,12 +23,12 @@ class ZTPanDirectionView: UIView {
         case cancel
     }
     
-    var direction:PanDirecrion = .none
-    fileprivate let thresholdValue:CGFloat = 20
-    fileprivate var startPoint: CGPoint = .zero
-    fileprivate var movePoint: CGPoint = .zero
-    fileprivate var endPoint: CGPoint = .zero
-    fileprivate var panPoint:CGPoint = .zero
+    private (set) var direction:PanDirecrion = .none
+    private let thresholdValue:CGFloat = 20
+    private var startPoint: CGPoint = .zero
+    private var movePoint: CGPoint = .zero
+    private var endPoint: CGPoint = .zero
+    private var panPoint:CGPoint = .zero
     
     /// state：枚举值- 触摸的状态
     /// direction：滑动方向

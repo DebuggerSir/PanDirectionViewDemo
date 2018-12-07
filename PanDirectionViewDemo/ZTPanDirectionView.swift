@@ -22,13 +22,31 @@ class ZTPanDirectionView: UIView {
         case end
         case cancel
     }
-    
+    /// 避免手指开屏幕后抖动造成的影响
+    private let offsetPix:CGFloat = 1
     private (set) var direction:PanDirecrion = .none
+    private (set) var panDirection:PanDirecrion = .none
     private let thresholdValue:CGFloat = 20
     private var startPoint: CGPoint = .zero
     private var movePoint: CGPoint = .zero
     private var endPoint: CGPoint = .zero
-    private var panPoint:CGPoint = .zero
+    private var panPoint:CGPoint = .zero {
+        didSet {
+            if direction == .left || direction == .right {
+                if panPoint.x < oldValue.x - offsetPix {
+                    panDirection = .left
+                } else if panPoint.x >= oldValue.x + offsetPix{
+                    panDirection = .right
+                }
+            } else if direction == .up || direction == .down {
+                if panPoint.y < oldValue.y - offsetPix{
+                    panDirection = .up
+                } else if panPoint.y >= oldValue.y + offsetPix{
+                    panDirection = .down
+                }
+            }
+        }
+    }
     
     /// state：枚举值- 触摸的状态
     /// direction：滑动方向
@@ -46,6 +64,9 @@ class ZTPanDirectionView: UIView {
         //记录开始点击位置
         self.startPoint = startPoint
         self.direction = .none
+        self.panDirection = .none
+        self.panPoint = .zero
+        self.endPoint = .zero
         
         panPoint = .zero
         touchesActions?(.begin, direction, (self.startPoint, self.movePoint, self.endPoint, panPoint), false)
@@ -87,4 +108,29 @@ class ZTPanDirectionView: UIView {
         touchesActions?(.move, direction, (self.startPoint, self.movePoint, self.endPoint, panPoint), false)
     }
     
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesCancelled(touches, with: event)
+        
+        let touch = touches.first
+        let point = touch?.location(in: self)
+        
+        guard let cancelPoint = point else {return}
+        //计算滑动的距离
+        panPoint = CGPoint(x: cancelPoint.x - startPoint.x, y: cancelPoint.y - startPoint.y)
+        touchesActions?(.cancel, direction, (self.startPoint, self.movePoint, self.endPoint, panPoint), true)
+    }
+    
+    //如果发现添加后，所在控制器不走这里的ToucheDelegate方法，则实现此方法
+    //    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+    //        return false
+    //    }
 }
+
+//如果此view全屏且所属控制器需要侧滑返回，或底s上滑返回，则需要在 所在控制器实现UIGestureDelegate的以下代理方法
+//func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+//    let point = touch.location(in: gestureRecognizer.view)
+//    if CGRect(x: 20, y: 0, width: Constants.SCREEN_WIDTH - 20, height: Constants.SCREEN_HEIGHT - 20).contains(point) {
+//        return false
+//    }
+//    return true
+//}

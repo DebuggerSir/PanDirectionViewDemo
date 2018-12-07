@@ -15,6 +15,7 @@
 		B745E95121B529D100703774 /* PanDirectionViewDemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B745E95021B529D100703774 /* PanDirectionViewDemoTests.swift */; };
 		B745E95C21B529D100703774 /* PanDirectionViewDemoUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B745E95B21B529D100703774 /* PanDirectionViewDemoUITests.swift */; };
 		B745E96A21B52A0100703774 /* ZTPanDirectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B745E96921B52A0100703774 /* ZTPanDirectionView.swift */; };
+		B77EB87A21B8B69D00250687 /* RedPointView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B77EB87921B8B69D00250687 /* RedPointView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +50,7 @@
 		B745E95B21B529D100703774 /* PanDirectionViewDemoUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanDirectionViewDemoUITests.swift; sourceTree = "<group>"; };
 		B745E95D21B529D100703774 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B745E96921B52A0100703774 /* ZTPanDirectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZTPanDirectionView.swift; sourceTree = "<group>"; };
+		B77EB87921B8B69D00250687 /* RedPointView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedPointView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +104,7 @@
 				B745E93B21B529D000703774 /* AppDelegate.swift */,
 				B745E93D21B529D000703774 /* ViewController.swift */,
 				B745E96921B52A0100703774 /* ZTPanDirectionView.swift */,
+				B77EB87921B8B69D00250687 /* RedPointView.swift */,
 				B745E93F21B529D000703774 /* Main.storyboard */,
 				B745E94221B529D100703774 /* Assets.xcassets */,
 				B745E94421B529D100703774 /* LaunchScreen.storyboard */,
@@ -260,6 +263,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B745E93E21B529D000703774 /* ViewController.swift in Sources */,
+				B77EB87A21B8B69D00250687 /* RedPointView.swift in Sources */,
 				B745E93C21B529D000703774 /* AppDelegate.swift in Sources */,
 				B745E96A21B52A0100703774 /* ZTPanDirectionView.swift in Sources */,
 			);

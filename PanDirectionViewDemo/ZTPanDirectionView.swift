@@ -23,10 +23,19 @@ class ZTPanDirectionView: UIView {
         case cancel
     }
     /// 避免手指开屏幕后抖动造成的影响
-    private let offsetPix:CGFloat = 1
+    private let offsetPix:CGFloat = 0
     private (set) var direction:PanDirecrion = .none
-    private (set) var panDirection:PanDirecrion = .none
-    private let thresholdValue:CGFloat = 20
+    private (set) var panDirection:PanDirecrion = .none {
+        didSet {
+            if panDirection != oldValue{
+                oldMovePoint = movePoint
+            }
+        }
+    }
+    
+    private (set) var absolutionOffset:CGPoint = .zero
+    private (set) var oldMovePoint:CGPoint = .zero
+    private let thresholdValue:CGFloat = 10
     private var startPoint: CGPoint = .zero
     private var movePoint: CGPoint = .zero
     private var endPoint: CGPoint = .zero
@@ -35,13 +44,13 @@ class ZTPanDirectionView: UIView {
             if direction == .left || direction == .right {
                 if panPoint.x < oldValue.x - offsetPix {
                     panDirection = .left
-                } else if panPoint.x >= oldValue.x + offsetPix{
+                } else if panPoint.x > oldValue.x + offsetPix{
                     panDirection = .right
                 }
             } else if direction == .up || direction == .down {
                 if panPoint.y < oldValue.y - offsetPix{
                     panDirection = .up
-                } else if panPoint.y >= oldValue.y + offsetPix{
+                } else if panPoint.y > oldValue.y + offsetPix{
                     panDirection = .down
                 }
             }
@@ -68,6 +77,8 @@ class ZTPanDirectionView: UIView {
         self.panPoint = .zero
         self.endPoint = .zero
         
+        absolutionOffset = .zero
+        oldMovePoint = .zero
         panPoint = .zero
         touchesActions?(.begin, direction, (self.startPoint, self.movePoint, self.endPoint, panPoint), false)
     }
@@ -103,8 +114,8 @@ class ZTPanDirectionView: UIView {
                 direction = .down
             }
         }
-        if direction == .none { return }
-        
+        //        if direction == .none { return }
+        absolutionOffset = CGPoint(x: movePoint.x - oldMovePoint.x, y: movePoint.y - oldMovePoint.y)
         touchesActions?(.move, direction, (self.startPoint, self.movePoint, self.endPoint, panPoint), false)
     }
     
@@ -116,7 +127,9 @@ class ZTPanDirectionView: UIView {
         
         guard let cancelPoint = point else {return}
         //计算滑动的距离
+        
         panPoint = CGPoint(x: cancelPoint.x - startPoint.x, y: cancelPoint.y - startPoint.y)
+        absolutionOffset = CGPoint(x: cancelPoint.x - oldMovePoint.x, y: cancelPoint.y - oldMovePoint.y)
         touchesActions?(.cancel, direction, (self.startPoint, self.movePoint, self.endPoint, panPoint), true)
     }
     

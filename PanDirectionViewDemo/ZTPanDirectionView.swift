@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import MediaPlayer
 
 class ZTPanDirectionView: UIView {
     enum PanDirecrion:Int {
@@ -56,13 +57,72 @@ class ZTPanDirectionView: UIView {
             }
         }
     }
-    
+    var sliderView = UISlider()
+    var volumeView = MPVolumeView()
     /// state：枚举值- 触摸的状态
     /// direction：滑动方向
     /// pointMeta：state对应的point值
     /// panPoint：拖动位移
     /// complete：是否拖动结束
     var touchesActions:((_ state:TouchStatus, _ direction:PanDirecrion, _ pointMeta:(begin:CGPoint, move:CGPoint, end:CGPoint, panPoint:CGPoint), _ complete:Bool)->())? = nil
+    var touchesSingleTapAction:((_ touchePoint:CGPoint)->())? = nil
+    var touchesContinueTapAction:((_ touchePoint:CGPoint)->())? = nil
+    var lastTapTime:TimeInterval = 0
+    var lastTapPoint:CGPoint = .zero
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        let tap = UITapGestureRecognizer(target: self, action: #selector(playOrPause(tapGestrue:)))
+        tap.numberOfTouchesRequired = 1
+        tap.numberOfTapsRequired = 1
+        self.addGestureRecognizer(tap)
+        
+        sliderView = UISlider()
+        volumeView = MPVolumeView()
+        volumeView.sizeToFit()
+        for view in volumeView.subviews {
+            if view.classForCoder.description() == "MPVolumeSlider" {
+                sliderView = view as! UISlider
+            }
+        }
+        volumeView.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.width * 9 / 16)
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    @objc func playOrPause(tapGestrue:UITapGestureRecognizer) {
+        //获取点击坐标，用于设置爱心显示位置
+        let point = tapGestrue.location(in: self)
+        //获取当前时间
+        let time = CACurrentMediaTime()
+        //判断当前点击时间与上次点击时间的时间间隔
+        if (time - lastTapTime) > 0.25 {
+            //推迟0.25秒执行单击方法
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.25) {
+                [weak self] in
+                guard let `self` = self else {return}
+                self.singleTapAction()
+            }
+        } else {
+            //取消执行单击方法
+            NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(singleTapAction), object: nil)
+            //执行连击显示爱心的方法
+            continueTapAction()
+        }
+        //更新上一次点击位置
+        lastTapPoint = point
+        //更新上一次点击时间
+        lastTapTime = time
+    }
+    
+    @objc func singleTapAction (){
+        touchesSingleTapAction?(lastTapPoint)
+    }
+    
+    @objc func continueTapAction(){
+        touchesContinueTapAction?(lastTapPoint)
+    }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)

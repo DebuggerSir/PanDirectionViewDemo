@@ -67,8 +67,11 @@ class ZTPanDirectionView: UIView {
     var touchesActions:((_ state:TouchStatus, _ direction:PanDirecrion, _ pointMeta:(begin:CGPoint, move:CGPoint, end:CGPoint, panPoint:CGPoint), _ complete:Bool)->())? = nil
     var touchesSingleTapAction:((_ touchePoint:CGPoint)->())? = nil
     var touchesContinueTapAction:((_ touchePoint:CGPoint)->())? = nil
-    var lastTapTime:TimeInterval = 0
-    var lastTapPoint:CGPoint = .zero
+    
+    private var task:GCDTask? = nil
+    private var lastTapTime:TimeInterval = 0
+    private var lastTapPoint:CGPoint = .zero
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         let tap = UITapGestureRecognizer(target: self, action: #selector(playOrPause(tapGestrue:)))
@@ -84,31 +87,31 @@ class ZTPanDirectionView: UIView {
                 sliderView = view as! UISlider
             }
         }
-        volumeView.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.width * 9 / 16)
+        volumeView.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height * 9 / 16)
     }
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    @objc func playOrPause(tapGestrue:UITapGestureRecognizer) {
+    @objc fileprivate func playOrPause(tapGestrue:UITapGestureRecognizer) {
         //获取点击坐标，用于设置爱心显示位置
         let point = tapGestrue.location(in: self)
         //获取当前时间
-        let time = CACurrentMediaTime()
+        let time = CFAbsoluteTimeGetCurrent()//CACurrentMediaTime()
         //判断当前点击时间与上次点击时间的时间间隔
-        if (time - lastTapTime) > 0.25 {
-            //推迟0.25秒执行单击方法
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.25) {
-                [weak self] in
+        if (time - lastTapTime) > 0.3 {
+            //推迟0.3秒执行单击方法
+            self.task = delayTask(0.3) {[weak self] in
                 guard let `self` = self else {return}
-                self.singleTapAction()
+                self.touchesSingleTapAction?(self.lastTapPoint)
             }
         } else {
             //取消执行单击方法
-            NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(singleTapAction), object: nil)
+            self.cancelTask(self.task)
+            
             //执行连击显示爱心的方法
-            continueTapAction()
+            self.touchesContinueTapAction?(self.lastTapPoint)
         }
         //更新上一次点击位置
         lastTapPoint = point
@@ -116,15 +119,7 @@ class ZTPanDirectionView: UIView {
         lastTapTime = time
     }
     
-    @objc func singleTapAction (){
-        touchesSingleTapAction?(lastTapPoint)
-    }
-    
-    @objc func continueTapAction(){
-        touchesContinueTapAction?(lastTapPoint)
-    }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+    internal override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
         
         let touch = touches.first
@@ -143,7 +138,7 @@ class ZTPanDirectionView: UIView {
         touchesActions?(.begin, direction, (self.startPoint, self.movePoint, self.endPoint, panPoint), false)
     }
     
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    internal override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesEnded(touches, with: event)
         
         let touch = touches.first
@@ -153,7 +148,7 @@ class ZTPanDirectionView: UIView {
         touchesActions?(.end, direction, (self.startPoint, self.movePoint, self.endPoint, panPoint), true)
     }
     
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+    internal override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesMoved(touches, with: event)
         
         let touch = touches.first
@@ -175,11 +170,13 @@ class ZTPanDirectionView: UIView {
             }
         }
         //        if direction == .none { return }
+        
+        
         absolutionOffset = CGPoint(x: movePoint.x - oldMovePoint.x, y: movePoint.y - oldMovePoint.y)
         touchesActions?(.move, direction, (self.startPoint, self.movePoint, self.endPoint, panPoint), false)
     }
     
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+    internal override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesCancelled(touches, with: event)
         
         let touch = touches.first
@@ -207,3 +204,53 @@ class ZTPanDirectionView: UIView {
 //    }
 //    return true
 //}
+
+
+
+extension ZTPanDirectionView {
+    typealias GCDTask = (_ cancel: Bool) -> Void
+    
+    /// block延迟可取消任务
+    ///
+    /// - Parameters:
+    ///   - time: 延迟时间
+    ///   - task: 任务
+    /// - Returns: 任务
+    func delayTask(_ time: TimeInterval, task: @escaping () -> ()) -> GCDTask? {
+        
+        func dispatch_later(block: @escaping () -> ()) {
+            let t = DispatchTime.now() + time
+            DispatchQueue.main.asyncAfter(deadline: t, execute: block)
+        }
+        
+        var closure: (() -> Void)? = task
+        var result: GCDTask?
+        
+        let delayedClosure: GCDTask = { cancel in
+            
+            if let internalClosure = closure {
+                if (cancel == false) {
+                    DispatchQueue.main.async(execute: internalClosure)
+                }
+            }
+            closure = nil
+            result = nil
+        }
+        
+        result = delayedClosure
+        dispatch_later {
+            if let delayedClosure = result {
+                delayedClosure(false)
+            }
+        }
+        
+        return result
+    }
+    
+    /// 取消任务
+    ///
+    /// - Parameter task: 将要取消的任务
+    func cancelTask(_ task: GCDTask?) {
+        task?(true)
+    }
+}
